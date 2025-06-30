@@ -13,38 +13,38 @@
 
 ---
 
-## 🖥️ Getting Started (Local)
+# 🖥️ Getting Started (Local)
 
 > Requires: **Node.js ≥ 18**, **pnpm**, and **Playwright**
 
-### 1. Install dependencies
+## 1. Install dependencies
 
 ```bash
 pnpm install
 ```
 This installs dependencies for the main app as well as the test runner.
 
-2. Install Playwright browsers
+## 2. Install Playwright browsers
 ```bash
 npx playwright install
 ```
 This step is required for Playwright to function properly (downloads Chromium, etc.).
 
-3. Start the application
+## 3. Start the application
 ```bash
 pnpm dev
 ```
 By default, the app runs on http://localhost:3000.
 
-🐳 Running with Docker
+# 🐳 Running with Docker
 Requires: Docker installed
 
-1. Build the Docker image
+## 1. Build the Docker image
 ```bash
 docker build -t stitch-app .
 ```
 
-2. Run the container
+## 2. Run the container
 ```bash
 docker run -p 3000:3000 stitch-app
 ```
