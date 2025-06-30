@@ -353,7 +353,7 @@ export default function HomePage() {
             <header className="bg-white border-b border-gray-200 p-4">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Playwright E2E Test Builder</h1>
+                  <h1 className="text-2xl font-bold text-gray-900">Stitch</h1>
                   <p className="text-gray-600">Visual test builder with custom blocks support</p>
                 </div>
 
