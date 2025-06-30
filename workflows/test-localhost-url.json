@@ -1,0 +1,61 @@
+{
+  "baseUrl": "http://localhost:3000",
+  "workflows": {
+    "main": {
+      "name": "Test Localhost URL Check",
+      "description": "Test workflow that uses custom URL checker",
+      "workflow": [
+        {
+          "block": "goto",
+          "parameters": {
+            "url": "/"
+          }
+        },
+        {
+          "block": "custom_check_localhost_url",
+          "parameters": {
+            "strict": "true",
+            "expectedPath": "/"
+          }
+        },
+        {
+          "block": "goto",
+          "parameters": {
+            "url": "/about"
+          }
+        },
+        {
+          "block": "custom_check_localhost_url",
+          "parameters": {
+            "strict": "false",
+            "expectedPath": "/about"
+          }
+        }
+      ]
+    }
+  },
+  "mainWorkflow": "main",
+  "customBlocks": {
+    "custom_check_localhost_url": {
+      "id": "custom_check_localhost_url",
+      "name": "Check Localhost URL",
+      "code": "console.log('🔍 Checking if URL is localhost:3000...')\n\nconst currentUrl = page.url()\nconsole.log('Current URL:', currentUrl)\n\nconst isLocalhost3000 = currentUrl.includes('localhost:3000')\n\nif (parameters.strict === 'true') {\n  const expectedUrl = 'http://localhost:3000'\n  \n  if (currentUrl.startsWith(expectedUrl)) {\n    console.log('✅ URL is exactly localhost:3000')\n  } else {\n    throw new Error(`URL mismatch! Expected to start with \"${expectedUrl}\" but got \"${currentUrl}\"`)\n  }\n} else {\n  if (isLocalhost3000) {\n    console.log('✅ URL contains localhost:3000')\n  } else {\n    throw new Error(`URL check failed! Expected localhost:3000 but got \"${currentUrl}\"`)\n  }\n}\n\nif (parameters.expectedPath) {\n  const url = new URL(currentUrl)\n  const actualPath = url.pathname\n  \n  if (actualPath === parameters.expectedPath) {\n    console.log(`✅ Path matches: ${actualPath}`)\n  } else {\n    throw new Error(`Path mismatch! Expected \"${parameters.expectedPath}\" but got \"${actualPath}\"`)\n  }\n}\n\nconsole.log('🎉 URL check completed successfully!')",
+      "parameters": [
+        {
+          "id": "strict",
+          "name": "Strict Mode",
+          "type": "text",
+          "placeholder": "true/false",
+          "required": false
+        },
+        {
+          "id": "expectedPath",
+          "name": "Expected Path",
+          "type": "text",
+          "placeholder": "/dashboard",
+          "required": false
+        }
+      ]
+    }
+  }
+}

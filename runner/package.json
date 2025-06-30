@@ -1,0 +1,17 @@
+{
+  "name": "e2e-test-runner",
+  "version": "1.0.0",
+  "description": "Simple Playwright test runner",
+  "main": "run-workflow.js",
+  "type": "module",
+  "scripts": {
+    "test": "node run-workflow.js",
+    "test:headless": "HEADLESS=true node run-workflow.js",
+    "test:debug": "DEBUG=true HEADLESS=false node run-workflow.js"
+  },
+  "dependencies": {
+    "@playwright/test": "^1.40.0",
+    "playwright": "^1.40.0",
+    "chalk": "^4.1.2"
+  }
+}

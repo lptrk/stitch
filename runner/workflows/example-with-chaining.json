@@ -1,0 +1,83 @@
+{
+  "baseUrl": "http://localhost:3000",
+  "workflows": {
+    "setup": {
+      "name": "Setup Workflow",
+      "description": "Initial setup steps",
+      "workflow": [
+        {
+          "block": "navigateToPage",
+          "parameters": {
+            "path": "/"
+          }
+        },
+        {
+          "block": "verifyPageTitle",
+          "parameters": {
+            "expectedTitle": "My App"
+          }
+        }
+      ]
+    },
+    "login": {
+      "name": "Login Workflow",
+      "description": "User login process",
+      "workflow": [
+        {
+          "block": "navigateToPage",
+          "parameters": {
+            "path": "/login"
+          }
+        },
+        {
+          "block": "typeInInput",
+          "parameters": {
+            "selector": "input[name='email']",
+            "text": "test@example.com"
+          }
+        },
+        {
+          "block": "typeInInput",
+          "parameters": {
+            "selector": "input[name='password']",
+            "text": "password123"
+          }
+        },
+        {
+          "block": "clickLoginButton"
+        }
+      ]
+    },
+    "main": {
+      "name": "Main Test Workflow",
+      "description": "Complete test workflow with chaining",
+      "workflow": [
+        {
+          "block": "callWorkflow",
+          "parameters": {
+            "workflowId": "setup"
+          }
+        },
+        {
+          "block": "callWorkflow",
+          "parameters": {
+            "workflowId": "login"
+          }
+        },
+        {
+          "block": "verifyPageTitle",
+          "parameters": {
+            "expectedTitle": "Dashboard"
+          }
+        },
+        {
+          "block": "takeScreenshot",
+          "parameters": {
+            "filename": "dashboard-after-login.png"
+          }
+        }
+      ]
+    }
+  },
+  "mainWorkflow": "main"
+}
