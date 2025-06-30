@@ -1,0 +1,24 @@
+{
+  "name": "Check Localhost URL",
+  "description": "Verifies that current URL is localhost:3000",
+  "category": "verification",
+  "icon": "Globe",
+  "parameters": [
+    {
+      "id": "strict",
+      "name": "Strict Mode",
+      "type": "text",
+      "placeholder": "true/false",
+      "required": false,
+      "defaultValue": "false"
+    },
+    {
+      "id": "expectedPath",
+      "name": "Expected Path (optional)",
+      "type": "text",
+      "placeholder": "/dashboard",
+      "required": false
+    }
+  ],
+  "code": "// Custom Block: Check Localhost URL\n// Prüft ob die aktuelle URL localhost:3000 ist\n\nconsole.log('🔍 Checking if URL is localhost:3000...')\n\n// Get current URL\nconst currentUrl = page.url()\nconsole.log('Current URL:', currentUrl)\n\n// Check if URL contains localhost:3000\nconst isLocalhost3000 = currentUrl.includes('localhost:3000')\n\nif (parameters.strict === 'true') {\n  // Strict mode: URL must start with http://localhost:3000\n  const expectedUrl = 'http://localhost:3000'\n  \n  if (currentUrl.startsWith(expectedUrl)) {\n    console.log('✅ URL is exactly localhost:3000')\n  } else {\n    throw new Error(`URL mismatch! Expected to start with \"${expectedUrl}\" but got \"${currentUrl}\"`)\n  }\n} else {\n  // Flexible mode: URL just needs to contain localhost:3000\n  if (isLocalhost3000) {\n    console.log('✅ URL contains localhost:3000')\n  } else {\n    throw new Error(`URL check failed! Expected localhost:3000 but got \"${currentUrl}\"`)\n  }\n}\n\n// Optional: Check specific path if provided\nif (parameters.expectedPath) {\n  const url = new URL(currentUrl)\n  const actualPath = url.pathname\n  \n  if (actualPath === parameters.expectedPath) {\n    console.log(`✅ Path matches: ${actualPath}`)\n  } else {\n    throw new Error(`Path mismatch! Expected \"${parameters.expectedPath}\" but got \"${actualPath}\"`)\n  }\n}\n\nconsole.log('🎉 URL check completed successfully!')"
+}

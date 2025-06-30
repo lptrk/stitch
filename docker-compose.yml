@@ -1,0 +1,15 @@
+version: "3.9"
+
+services:
+  app:
+    build: .
+    container_name: stitch
+    ports:
+      - "3000:3000"
+    volumes:
+      # Optional: Mount für lokale JSON-Workflows und Custom-Blocks (readonly)
+      - ./workflows:/app/workflows:ro
+      - ./example-custom-blocks:/app/example-custom-blocks:ro
+    environment:
+      - NODE_ENV=production
+      - PORT=3000

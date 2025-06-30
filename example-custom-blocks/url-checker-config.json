@@ -1,0 +1,37 @@
+{
+  "name": "URL Checker (Fixed)",
+  "description": "Checks URL with proper parameter handling",
+  "category": "verification",
+  "icon": "Globe",
+  "parameters": [
+    {
+      "id": "exactUrl",
+      "name": "Exact URL",
+      "type": "text",
+      "placeholder": "https://localhost:3000/dashboard",
+      "required": false
+    },
+    {
+      "id": "host",
+      "name": "Host",
+      "type": "text",
+      "placeholder": "localhost:3000",
+      "required": false
+    },
+    {
+      "id": "path",
+      "name": "Path",
+      "type": "text",
+      "placeholder": "/dashboard",
+      "required": false
+    },
+    {
+      "id": "contains",
+      "name": "Contains",
+      "type": "text",
+      "placeholder": "success",
+      "required": false
+    }
+  ],
+  "code": "// Fixed URL Checker - Korrekte Parameter-Verwendung\nconsole.log('🔍 Checking URL with parameters:', parameters)\n\n// Debug: Zeige alle verfügbaren Parameter\nconsole.log('📋 Available parameters:', Object.keys(parameters))\nconsole.log('📋 Parameter values:', parameters)\n\n// Get current URL\nconst currentUrl = page.url()\nconsole.log('🌐 Current URL:', currentUrl)\n\n// Check different URL aspects based on parameters\nif (parameters.exactUrl) {\n  // Exact URL match\n  console.log(`🎯 Checking exact URL: ${parameters.exactUrl}`)\n  await expect(page).toHaveURL(parameters.exactUrl)\n  console.log('✅ Exact URL match successful')\n  \n} else if (parameters.host) {\n  // Host check\n  const expectedHost = parameters.host\n  console.log(`🏠 Checking host: ${expectedHost}`)\n  \n  // Build expected URL pattern\n  const hostPattern = expectedHost.startsWith('http') \n    ? expectedHost \n    : `http://${expectedHost}`\n    \n  console.log(`🔍 Looking for host pattern: ${hostPattern}`)\n  \n  // Check if current URL starts with expected host\n  if (currentUrl.startsWith(hostPattern) || currentUrl.includes(expectedHost)) {\n    console.log('✅ Host check successful')\n  } else {\n    throw new Error(`Host mismatch! Expected \"${expectedHost}\" but current URL is \"${currentUrl}\"`)\n  }\n  \n} else if (parameters.path) {\n  // Path check\n  const expectedPath = parameters.path\n  console.log(`📍 Checking path: ${expectedPath}`)\n  \n  const url = new URL(currentUrl)\n  const actualPath = url.pathname\n  \n  if (actualPath === expectedPath || actualPath.includes(expectedPath)) {\n    console.log(`✅ Path check successful: ${actualPath}`)\n  } else {\n    throw new Error(`Path mismatch! Expected \"${expectedPath}\" but got \"${actualPath}\"`)\n  }\n  \n} else if (parameters.contains) {\n  // Contains check\n  const searchTerm = parameters.contains\n  console.log(`🔍 Checking if URL contains: ${searchTerm}`)\n  \n  if (currentUrl.includes(searchTerm)) {\n    console.log('✅ Contains check successful')\n  } else {\n    throw new Error(`URL does not contain \"${searchTerm}\". Current URL: \"${currentUrl}\"`)\n  }\n  \n} else {\n  // Default: just log current URL\n  console.log('ℹ️ No specific URL check parameters provided')\n  console.log(`📍 Current URL: ${currentUrl}`)\n}\n\nconsole.log('🎉 URL check completed successfully!')"
+}
