@@ -3,7 +3,10 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'Stitch',
-  description:'Easier Frontend Tests'
+  description:'Easier Frontend Tests',
+  icons: {
+    icon: "favicon.ico"
+  }
 }
 
 export default function RootLayout({
