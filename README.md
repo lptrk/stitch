@@ -1,4 +1,7 @@
 # 🧪 Stitch – Visual Workflow Runner
+![image](https://github.com/user-attachments/assets/0d9ca5cd-e4d1-420c-8413-22e4f056fe64)
+![image](https://github.com/user-attachments/assets/46bee3c8-cf18-483d-a848-56404feed245)
+![image](https://github.com/user-attachments/assets/4e0badcf-0fa6-4508-8e82-a1b197e93caa)
 
 **Stitch** is a visual E2E workflow test runner that allows you to define, inspect, and execute Playwright-based test blocks through an intuitive UI. Built with Next.js and Playwright.
 
