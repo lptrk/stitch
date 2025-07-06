@@ -23,11 +23,11 @@ const runnerPackageJson = {
   name: "e2e-test-runner",
   version: "1.0.0",
   description: "Playwright test runner for visual E2E test builder",
-  main: "run-workflow.js",
+  main: "run-workflow.ts",
   scripts: {
-    test: "node run-workflow.js",
-    "test:headless": "HEADLESS=true node run-workflow.js",
-    "test:debug": "DEBUG=true node run-workflow.js",
+    test: "node run-workflow.ts",
+    "test:headless": "HEADLESS=true node run-workflow.ts",
+    "test:debug": "DEBUG=true node run-workflow.ts",
   },
   dependencies: {
     playwright: "^1.40.0",
@@ -62,5 +62,5 @@ console.log("✅ Created example workflow")
 console.log("\n🎉 Playwright runner setup completed!")
 console.log("\nNext steps:")
 console.log("1. cd runner && npm install")
-console.log("2. node run-workflow.js workflows/example.json")
+console.log("2. node run-workflow.ts workflows/example.json")
 console.log("\nOr run from the web interface! 🚀")

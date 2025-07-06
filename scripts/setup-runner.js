@@ -46,7 +46,7 @@ const blockRegistry = {
 module.exports = { blockRegistry }
 `
 
-fs.writeFileSync(path.join(blocksDir, "index.js"), blockRegistry)
+fs.writeFileSync(path.join(blocksDir, "index.ts"), blockRegistry)
 
 // Create example block implementations
 const exampleBlock = `
@@ -59,7 +59,7 @@ async function clickCreateUserButton(page) {
 module.exports = { clickCreateUserButton }
 `
 
-fs.writeFileSync(path.join(blocksDir, "clickCreateUserButton.js"), exampleBlock)
+fs.writeFileSync(path.join(blocksDir, "clickCreateUserButton.ts"), exampleBlock)
 
 // Create workflow runner
 const workflowRunner = `
@@ -107,7 +107,7 @@ if (require.main === module) {
 module.exports = { runWorkflow }
 `
 
-fs.writeFileSync(path.join(runnerDir, "run-workflow.js"), workflowRunner)
+fs.writeFileSync(path.join(runnerDir, "run-workflow.ts"), workflowRunner)
 
 // Create example workflow
 const exampleWorkflow = [{ block: "clickCreateUserButton" }, { block: "clickSaveSettingsButton" }]
@@ -121,4 +121,4 @@ console.log("- runner/blocks/")
 console.log("- runner/workflows/")
 console.log("")
 console.log("To run a workflow:")
-console.log("cd runner && node run-workflow.js workflows/example.json")
+console.log("cd runner && node run-workflow.ts workflows/example.json")

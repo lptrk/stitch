@@ -54,11 +54,11 @@ This will launch the app in production mode at http://localhost:3000.
 You can trigger workflow execution via the Stitch UI or directly through the test runner:
 
 ```bash
-node runner/run-workflow.js workflows/example-with-chaining.json
+node runner/run-workflow.ts workflows/example-with-chaining.json
 ```
 In Docker:
 ```bash
-docker exec -it <container-name> node runner/run-workflow.js workflows/example-with-chaining.json
+docker exec -it <container-name> node runner/run-workflow.ts workflows/example-with-chaining.json
 ```
 📁 Project Structure
 ```

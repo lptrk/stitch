@@ -70,7 +70,7 @@ fs.writeFileSync(testFile, JSON.stringify(testWorkflow, null, 2))
 
 console.log("✅ Created test workflow with chaining:", testFile)
 console.log("\nTo test workflow chaining:")
-console.log("cd runner && node run-workflow.js workflows/test-chaining.json")
+console.log("cd runner && node run-workflow.ts workflows/test-chaining.json")
 console.log("\nThis workflow will:")
 console.log("1. 🔗 Call 'step1' workflow (navigate + verify title)")
 console.log("2. 🔗 Call 'step2' workflow (wait for element + screenshot)")

@@ -80,7 +80,7 @@ export function useTestExecution() {
     (success: boolean, error?: string) => {
       console.log("🏁 Completing test execution:", success ? "SUCCESS" : "FAILED", error)
 
-      setExecution((prev) => ({
+      setExecution((prev: { logs: any }) => ({
         ...prev,
         status: success ? "success" : "failed",
         endTime: new Date(),
@@ -116,7 +116,7 @@ export function useTestExecution() {
     (blockId: string, itemId: string, status: "running" | "success" | "failed", error?: string, duration?: number) => {
       console.log(`📊 Block ${blockId} status:`, status, error ? `(${error})` : "")
 
-      setExecution((prev) => ({
+      setExecution((prev: { currentBlockId: any; blockResults: any }) => ({
         ...prev,
         currentBlockId: status === "running" ? itemId : prev.currentBlockId,
         blockResults: {

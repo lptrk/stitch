@@ -119,6 +119,6 @@ fs.writeFileSync(debugFile, JSON.stringify(debugWorkflow, null, 2))
 
 console.log("✅ Created debug workflow:", debugFile)
 console.log("\nTo debug parameter passing:")
-console.log("cd runner && node run-workflow.js workflows/debug-parameters.json")
+console.log("cd runner && node run-workflow.ts workflows/debug-parameters.json")
 console.log("\nThis will show you exactly what parameters are being passed to your custom block!")
 console.log("Look for the '🐛 === PARAMETER DEBUG START ===' section in the output.")

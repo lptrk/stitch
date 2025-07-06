@@ -300,7 +300,7 @@ export function TestBlocksSidebar({
         onSave={selectedBlock?.isCustom ? handleSaveBlock : undefined}
         onDelete={selectedBlock?.isCustom ? handleDeleteBlock : undefined}
         onDuplicate={handleDuplicateBlock}
-        readonly={!selectedBlock?.isCustom}
+        readonly={false}
       />
 
       {/* Block Debug Dialog */}

@@ -8,6 +8,9 @@ import { BlockParameters } from "./block-parameters"
 import { GripVertical, X, GitBranch, Bug } from "lucide-react"
 import { BlockStatusIndicator } from "./block-status-indicator"
 import { SafeIcon } from "./safe-icon"
+import {BlockInspectorDialog} from "@/components/block-inspector-dialog";
+import {useState} from "react";
+import {BlockDebugDialog} from "@/components/block-debug-dialog";
 
 interface WorkflowItemProps {
   item: WorkflowItem
@@ -35,6 +38,8 @@ export function WorkflowItemComponent({
       item,
     },
   })
+  const [inspectorOpen, setInspectorOpen] = useState(false)
+
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -123,6 +128,8 @@ export function WorkflowItemComponent({
             <Bug className="w-4 h-4" />
           </Button>
         )}
+        
+        <BlockDebugDialog block={item.block} open={inspectorOpen} onClose={()=>{setInspectorOpen(false)}}></BlockDebugDialog>
 
         <Button
           variant="ghost"

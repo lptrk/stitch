@@ -353,7 +353,10 @@ export default function HomePage() {
             <header className="bg-white border-b border-gray-200 p-4">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Stitch</h1>
+                  <h1 className="text-3xl  font-extrabold  [text-stroke:2px_#2563eb]">
+                    Stitch
+                  </h1>
+
                   <p className="text-gray-600">Visual test builder with custom blocks support</p>
                 </div>
 
