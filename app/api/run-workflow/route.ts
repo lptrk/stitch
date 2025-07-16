@@ -4,7 +4,7 @@
  */
 
 import { type NextRequest, NextResponse } from "next/server"
-import {runWorkflow, TestResult, WorkflowConfig} from "lilo-e2e-runner";
+import {runWorkflow, TestResult, WorkflowConfig} from "stitch-runner";
 
 export async function POST(request: NextRequest) {
   try {
