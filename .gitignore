@@ -1,4 +1,34 @@
+# dependencies
 /node_modules/
+/package-lock.json
+/pnpm-lock.yaml
+
+# next.js
 /.next/
+/out/
+
+# runtime data (auth states, downloads, gitlab-config.json with tokens, etc.)
+/data/*
+!/data/.gitkeep
+
+# scratch / temp
 /temp/
-/.idea/
+
+# env files
+.env
+.env.local
+.env.*.local
+
+# typescript build info
+tsconfig.tsbuildinfo
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# editor / OS
+.idea/
+.vscode/
+.DS_Store
+*.pem

@@ -3,9 +3,9 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Installiere pnpm & dependencies
-COPY package.json pnpm-lock.yaml ./
-RUN npm install -g pnpm && pnpm install
+# Installiere pnpm & dependencies (kein Lockfile im Repo -> ohne --frozen-lockfile installieren)
+COPY package.json ./
+RUN npm install -g pnpm && pnpm install --no-frozen-lockfile
 
 # Quellcode kopieren & builden
 COPY . .
@@ -32,13 +32,20 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./
-COPY --from=builder /app/runner ./runner
 COPY --from=builder /app/scripts ./scripts
-COPY --from=builder /app/example-custom-blocks ./example-custom-blocks
 COPY --from=builder /app/workflows ./workflows
 
 # Playwright-Browser installieren
 RUN npx playwright install --with-deps
+
+# Dedicated data directory für sanitizePath (auth states, PDFs, downloads)
+RUN mkdir -p /app/data
+
+# Non-root user
+RUN groupadd -r appuser && useradd -r -g appuser appuser \
+    && chown -R appuser:appuser /app
+
+USER appuser
 
 # Start der Next.js App
 CMD ["node_modules/.bin/next", "start"]

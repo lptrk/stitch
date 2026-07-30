@@ -7,9 +7,12 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      # Optional: Mount für lokale JSON-Workflows und Custom-Blocks (readonly)
       - ./workflows:/app/workflows:ro
-      - ./example-custom-blocks:/app/example-custom-blocks:ro
+      - stitch-data:/app/data
     environment:
       - NODE_ENV=production
       - PORT=3000
+      - API_KEY=${STITCH_API_KEY}
+
+volumes:
+  stitch-data:
