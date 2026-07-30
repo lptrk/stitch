@@ -9,6 +9,10 @@ import {Label} from "@/components/ui/label"
 import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger} from "@/components/ui/dialog"
 import {AddCustomBlockDialog} from "./add-custom-block-dialog"
 import {Download, Upload, Trash2, Code} from "lucide-react"
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import {useToast} from "@/hooks/use-toast"
 import type {LucideIcon} from "lucide-react"
 import * as LucideIcons from "lucide-react"
@@ -29,6 +33,7 @@ export function CustomBlocksControls({
                                        onClearBlocks,
                                      }: CustomBlocksControlsProps) {
   const [importDialogOpen, setImportDialogOpen] = useState(false)
+  const [clearDialogOpen, setClearDialogOpen] = useState(false)
   const {toast} = useToast()
 
   // Create icon map for import
@@ -107,14 +112,16 @@ export function CustomBlocksControls({
 
   const handleClear = () => {
     if (customBlocksCount === 0) return
+    setClearDialogOpen(true)
+  }
 
-    if (confirm(`Delete all ${customBlocksCount} custom blocks? This cannot be undone.`)) {
-      onClearBlocks()
-      toast({
-        title: "Blocks cleared",
-        description: `Removed ${customBlocksCount} custom blocks`,
-      })
-    }
+  const confirmClear = () => {
+    onClearBlocks()
+    setClearDialogOpen(false)
+    toast({
+      title: "Blocks cleared",
+      description: `Removed ${customBlocksCount} custom blocks`,
+    })
   }
 
   return (
@@ -154,7 +161,7 @@ export function CustomBlocksControls({
                 <Label htmlFor="blocks-file">Select custom-blocks.json file</Label>
                 <Input id="blocks-file" type="file" accept=".json" onChange={handleImport} className="mt-2"/>
               </div>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 Only import blocks from trusted sources. Custom blocks contain executable code.
               </p>
             </div>
@@ -162,21 +169,30 @@ export function CustomBlocksControls({
         </Dialog>
       </div>
 
-      {/* Clear All */}
       {customBlocksCount > 0 && (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleClear}
-          className="text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent"
-        >
+        <Button variant="outline" size="sm" onClick={handleClear} className="text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent">
           <Trash2 className="w-3 h-3 mr-1"/>
           Clear All ({customBlocksCount})
         </Button>
       )}
 
+      <AlertDialog open={clearDialogOpen} onOpenChange={setClearDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete all custom blocks?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete all {customBlocksCount} custom blocks. Workflow steps using them will break.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmClear} className="bg-red-600 hover:bg-red-700">Delete All</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Info */}
-      <p className="text-xs text-gray-500 text-center">
+      <p className="text-xs text-muted-foreground text-center">
         {customBlocksCount === 0 ? "No custom blocks" : `${customBlocksCount} custom blocks loaded`}
       </p>
     </div>

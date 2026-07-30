@@ -24,10 +24,10 @@ export function BlockStatusIndicator({ item, isCurrentBlock = false, size = "md"
     switch (status) {
       case "running":
         return {
-          icon: <Loader2 className={`${iconSize} animate-spin text-blue-600`} />,
-          bgColor: "bg-blue-100",
-          borderColor: "border-blue-300",
-          textColor: "text-blue-700",
+          icon: <Loader2 className={`${iconSize} animate-spin text-primary`} />,
+          bgColor: "bg-accent",
+          borderColor: "border-primary/50",
+          textColor: "text-primary",
           label: "Running...",
         }
       case "success":
@@ -49,10 +49,10 @@ export function BlockStatusIndicator({ item, isCurrentBlock = false, size = "md"
       case "pending":
       default:
         return {
-          icon: <Circle className={`${iconSize} text-gray-400`} />,
-          bgColor: isCurrentBlock ? "bg-yellow-100" : "bg-gray-100",
-          borderColor: isCurrentBlock ? "border-yellow-300" : "border-gray-300",
-          textColor: isCurrentBlock ? "text-yellow-700" : "text-gray-500",
+          icon: <Circle className={`${iconSize} text-muted-foreground`} />,
+          bgColor: isCurrentBlock ? "bg-yellow-100" : "bg-muted",
+          borderColor: isCurrentBlock ? "border-yellow-300" : "border-border",
+          textColor: isCurrentBlock ? "text-yellow-700" : "text-muted-foreground",
           label: isCurrentBlock ? "Next" : "Pending",
         }
     }

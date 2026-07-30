@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { IconPicker } from "./icon-picker"
+import { useToast } from "@/hooks/use-toast"
 import type { LucideIcon } from "lucide-react"
 import { Plus, Code, MousePointer, Type, Eye, Settings, Navigation, Zap, X, Tag, Palette } from "lucide-react"
 
@@ -37,7 +38,7 @@ const blockCategories = [
   { id: "input", name: "Input Actions", icon: Type, color: "bg-green-500" },
   { id: "navigation", name: "Navigation", icon: Navigation, color: "bg-purple-500" },
   { id: "verification", name: "Verification", icon: Eye, color: "bg-orange-500" },
-  { id: "utility", name: "Utility", icon: Settings, color: "bg-gray-500" },
+  { id: "utility", name: "Utility", icon: Settings, color: "bg-muted" },
   { id: "custom", name: "Custom", icon: Zap, color: "bg-pink-500" },
 ]
 
@@ -87,10 +88,11 @@ const tagColorOptions = [
   { name: "Yellow", value: "bg-yellow-100 text-yellow-800 border-yellow-200", preview: "bg-yellow-500" },
   { name: "Emerald", value: "bg-emerald-100 text-emerald-800 border-emerald-200", preview: "bg-emerald-500" },
   { name: "Violet", value: "bg-violet-100 text-violet-800 border-violet-200", preview: "bg-violet-500" },
-  { name: "Gray", value: "bg-gray-100 text-gray-800 border-gray-200", preview: "bg-gray-500" },
+  { name: "Gray", value: "bg-muted text-foreground border-border", preview: "bg-muted" },
 ]
 
 export function AddCustomBlockDialog({ onAddBlock }: AddCustomBlockDialogProps) {
+  const { toast } = useToast()
   const [open, setOpen] = useState(false)
   const [formData, setFormData] = useState({
     name: "",
@@ -159,7 +161,7 @@ export function AddCustomBlockDialog({ onAddBlock }: AddCustomBlockDialogProps) 
 
   const handleSubmit = () => {
     if (!formData.name || !formData.category || !formData.code) {
-      alert("Please fill in all required fields (Name, Category, Code)")
+      toast({ title: "Please fill in all required fields", description: "Name, Category and Code are required.", variant: "destructive" })
       return
     }
 
@@ -201,7 +203,7 @@ export function AddCustomBlockDialog({ onAddBlock }: AddCustomBlockDialogProps) 
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Code className="w-5 h-5" />
@@ -270,7 +272,7 @@ export function AddCustomBlockDialog({ onAddBlock }: AddCustomBlockDialogProps) 
                     </button>
                   </Badge>
                 ))}
-                {formData.tags.length === 0 && <span className="text-sm text-gray-500 italic">No tags added</span>}
+                {formData.tags.length === 0 && <span className="text-sm text-muted-foreground italic">No tags added</span>}
               </div>
 
               {/* Add Tag */}
@@ -304,7 +306,7 @@ export function AddCustomBlockDialog({ onAddBlock }: AddCustomBlockDialogProps) 
                 </div>
 
                 {/* Color Preview */}
-                <div className="flex items-center gap-2 text-sm text-gray-600">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Palette className="w-4 h-4" />
                   <span>Preview:</span>
                   <Badge className={`border ${selectedTagColor}`}>
@@ -339,7 +341,7 @@ export function AddCustomBlockDialog({ onAddBlock }: AddCustomBlockDialogProps) 
             </div>
 
             {parameters.length === 0 ? (
-              <p className="text-sm text-gray-500 italic">No parameters defined</p>
+              <p className="text-sm text-muted-foreground italic">No parameters defined</p>
             ) : (
               <div className="space-y-3">
                 {parameters.map((param, index) => (
@@ -415,7 +417,7 @@ export function AddCustomBlockDialog({ onAddBlock }: AddCustomBlockDialogProps) 
                 className="font-mono text-sm min-h-[200px]"
                 required
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Available: <code>page</code> (Playwright page), <code>parameters</code> (block parameters),{" "}
                 <code>expect</code> (Playwright expect), <code>console</code>
               </p>
@@ -424,15 +426,15 @@ export function AddCustomBlockDialog({ onAddBlock }: AddCustomBlockDialogProps) 
 
           {/* Preview */}
           {formData.name && selectedCategory && (
-            <div className="p-4 border rounded-lg bg-gray-50">
+            <div className="p-4 border rounded-lg bg-muted">
               <Label className="text-sm font-medium">Preview</Label>
-              <div className="mt-2 flex items-center gap-3 p-3 bg-white border rounded-lg">
+              <div className="mt-2 flex items-center gap-3 p-3 bg-card border rounded-lg">
                 <div className={`p-2 rounded-lg ${selectedCategory.color}`}>
                   <formData.icon className="w-4 h-4 text-white" />
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-medium text-gray-900">{formData.name}</h4>
-                  <p className="text-sm text-gray-600">
+                  <h4 className="font-medium text-foreground">{formData.name}</h4>
+                  <p className="text-sm text-muted-foreground">
                     {formData.description || `Custom ${selectedCategory.name.toLowerCase()} block`}
                   </p>
                   {formData.tags.length > 0 && (

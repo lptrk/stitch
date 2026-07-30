@@ -1,31 +1,33 @@
 "use client"
 
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Globe } from "lucide-react"
 
 interface BaseUrlInputProps {
   value: string
   onChange: (value: string) => void
+  showIcon?: boolean
+  className?: string
+  placeholder?: string
 }
 
-export function BaseUrlInput({ value, onChange }: BaseUrlInputProps) {
+export function BaseUrlInput({
+  value,
+  onChange,
+  showIcon = true,
+  className = "h-7 w-44 text-xs",
+  placeholder = "http://localhost:3000",
+}: BaseUrlInputProps) {
   return (
-    <div className="flex items-center gap-2">
-      <Globe className="w-4 h-4 text-gray-600" />
-      <div className="flex flex-col gap-1">
-        <Label htmlFor="base-url" className="text-xs text-gray-600">
-          Base URL
-        </Label>
-        <Input
-          id="base-url"
-          type="url"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="http://localhost:3000"
-          className="w-64 h-8 text-sm"
-        />
-      </div>
+    <div className="flex items-center gap-1">
+      {showIcon && <Globe className="w-3 h-3 text-muted-foreground flex-shrink-0" />}
+      <Input
+        type="url"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className={className}
+      />
     </div>
   )
 }

@@ -119,10 +119,10 @@ export function IconPicker({selectedIcon, onIconSelect, category}: IconPickerPro
   return (
     <div className="space-y-3">
       {/* Current Selection */}
-      <div className="flex items-center gap-3 p-3 border rounded-lg bg-gray-50">
+      <div className="flex items-center gap-3 p-3 border rounded-lg bg-muted">
         {selectedIcon && (() => {
           const SelectedIcon = selectedIcon;
-          return <SelectedIcon className="w-5 h-5 text-gray-700"/>;
+          return <SelectedIcon className="w-5 h-5 text-foreground"/>;
         })()}
         <span className="text-sm font-medium">
           Selected:{" "}
@@ -141,7 +141,7 @@ export function IconPicker({selectedIcon, onIconSelect, category}: IconPickerPro
 
       {/* Category Toggle */}
       <div className="flex justify-between items-center">
-        <span className="text-sm text-gray-600">
+        <span className="text-sm text-muted-foreground">
           {showAll
             ? "All Icons"
             : `${category ? `${category.charAt(0).toUpperCase() + category.slice(1)} ` : ""}Icons`}
@@ -177,13 +177,13 @@ export function IconPicker({selectedIcon, onIconSelect, category}: IconPickerPro
         </div>
 
         {filteredIcons.length === 0 && (
-          <div className="text-center py-8 text-gray-500 text-sm">
+          <div className="text-center py-8 text-muted-foreground text-sm">
             No icons found for &quot;{searchTerm}&quot;
           </div>
         )}
       </ScrollArea>
 
-      <p className="text-xs text-gray-500">{filteredIcons.length} icons available</p>
+      <p className="text-xs text-muted-foreground">{filteredIcons.length} icons available</p>
     </div>
   );
 }

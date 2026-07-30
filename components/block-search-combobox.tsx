@@ -113,6 +113,7 @@ export function BlockSearchCombobox({
 
   const hasActiveFilters = searchValue.trim() || selectedTags.length > 0 || selectedCategories.length > 0
   const filteredCount = filterBlocks(searchValue, selectedTags, selectedCategories).length
+  const activeFilterCount = selectedTags.length + selectedCategories.length
 
   // Get tag color for display
   const getTagColor = (tagName: string) => {
@@ -129,125 +130,107 @@ export function BlockSearchCombobox({
 
   return (
     <div className="space-y-2">
-      {/* Search Input */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+      {/* Single search row: icon + input + filter icon + optional clear */}
+      <div className="relative flex items-center">
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+
         <Input
           value={searchValue}
           onChange={(e) => handleSearchChange(e.target.value)}
           placeholder={placeholder}
-          className="pl-10 pr-10"
+          className="pl-8 pr-14 h-8 text-xs"
         />
-        {searchValue && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleSearchChange("")}
-            className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
-          >
-            <X className="w-3 h-3" />
-          </Button>
-        )}
+
+        <div className="absolute right-1 flex items-center gap-0.5">
+          {searchValue && (
+            <button
+              onClick={() => handleSearchChange("")}
+              className="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-foreground rounded"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          )}
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+              <button
+                className={`h-6 w-6 flex items-center justify-center rounded transition-colors ${
+                  activeFilterCount > 0
+                    ? "text-primary bg-accent"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                title="Filter blocks"
+              >
+                <Filter className="w-3.5 h-3.5" />
+                {activeFilterCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-primary text-primary-foreground text-[8px] rounded-full flex items-center justify-center font-bold">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-72 p-0" align="end">
+              <Command>
+                <CommandInput placeholder="Search filters..." className="h-8 text-xs" />
+                <CommandList>
+                  <CommandEmpty className="text-xs py-4 text-center text-muted-foreground">No filters found.</CommandEmpty>
+                  {allCategories.length > 0 && (
+                    <CommandGroup heading="Categories">
+                      {allCategories.map((category) => (
+                        <CommandItem key={category} onSelect={() => toggleCategory(category)} className="text-xs">
+                          <div className="flex items-center gap-2 w-full">
+                            <input type="checkbox" checked={selectedCategories.includes(category)} onChange={() => toggleCategory(category)} className="rounded" />
+                            <span className="capitalize">{category}</span>
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  )}
+                  {allTags.length > 0 && (
+                    <CommandGroup heading="Tags">
+                      {allTags.map((tag) => (
+                        <CommandItem key={tag} onSelect={() => toggleTag(tag)} className="text-xs">
+                          <div className="flex items-center gap-2 w-full">
+                            <input type="checkbox" checked={selectedTags.includes(tag)} onChange={() => toggleTag(tag)} className="rounded" />
+                            <Tag className="w-3 h-3" />
+                            <span>{tag}</span>
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  )}
+                  {activeFilterCount > 0 && (
+                    <div className="p-2 border-t">
+                      <button onClick={clearAllFilters} className="w-full text-xs text-red-500 hover:text-red-700 flex items-center justify-center gap-1 py-1">
+                        <X className="w-3 h-3" /> Clear all filters
+                      </button>
+                    </div>
+                  )}
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        </div>
       </div>
 
-      {/* Filter Controls */}
-      <div className="flex items-center gap-2">
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className="gap-2 bg-transparent">
-              <Filter className="w-4 h-4" />
-              Filters
-              {selectedTags.length + selectedCategories.length > 0 && (
-                <Badge variant="secondary" className="ml-1">
-                  {selectedTags.length + selectedCategories.length}
-                </Badge>
-              )}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-80 p-0" align="start">
-            <Command>
-              <CommandInput placeholder="Search filters..." />
-              <CommandList>
-                <CommandEmpty>No filters found.</CommandEmpty>
-
-                {/* Categories */}
-                {allCategories.length > 0 && (
-                  <CommandGroup heading="Categories">
-                    {allCategories.map((category) => (
-                      <CommandItem key={category} onSelect={() => toggleCategory(category)}>
-                        <div className="flex items-center gap-2 w-full">
-                          <input
-                            type="checkbox"
-                            checked={selectedCategories.includes(category)}
-                            onChange={() => toggleCategory(category)}
-                            className="rounded"
-                          />
-                          <span className="capitalize">{category}</span>
-                        </div>
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                )}
-
-                {/* Tags */}
-                {allTags.length > 0 && (
-                  <CommandGroup heading="Tags">
-                    {allTags.map((tag) => (
-                      <CommandItem key={tag} onSelect={() => toggleTag(tag)}>
-                        <div className="flex items-center gap-2 w-full">
-                          <input
-                            type="checkbox"
-                            checked={selectedTags.includes(tag)}
-                            onChange={() => toggleTag(tag)}
-                            className="rounded"
-                          />
-                          <Tag className="w-3 h-3" />
-                          <span>{tag}</span>
-                        </div>
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                )}
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
-
-        {hasActiveFilters && (
-          <Button variant="ghost" size="sm" onClick={clearAllFilters} className="gap-2">
-            <X className="w-4 h-4" />
-            Clear
-          </Button>
-        )}
-      </div>
-
-      {/* Active Filters Display */}
-      {hasActiveFilters && (
+      {/* Active filter chips */}
+      {activeFilterCount > 0 && (
         <div className="flex flex-wrap gap-1">
           {selectedCategories.map((category) => (
-            <Badge key={category} variant="secondary" className="gap-1">
+            <Badge key={category} variant="secondary" className="gap-1 text-[10px] h-5 px-1.5">
               {category}
-              <button onClick={() => toggleCategory(category)} className="ml-1 hover:text-red-600">
-                <X className="w-3 h-3" />
+              <button onClick={() => toggleCategory(category)} className="hover:text-red-600">
+                <X className="w-2.5 h-2.5" />
               </button>
             </Badge>
           ))}
           {selectedTags.map((tag) => (
-            <Badge key={tag} className={`border gap-1 ${getTagColor(tag)}`}>
-              <Tag className="w-2 h-2" />
+            <Badge key={tag} className={`border gap-1 text-[10px] h-5 px-1.5 ${getTagColor(tag)}`}>
               {tag}
-              <button onClick={() => toggleTag(tag)} className="ml-1 hover:text-red-600">
-                <X className="w-3 h-3" />
+              <button onClick={() => toggleTag(tag)} className="hover:text-red-600">
+                <X className="w-2.5 h-2.5" />
               </button>
             </Badge>
           ))}
-        </div>
-      )}
-
-      {/* Results Count */}
-      {hasActiveFilters && (
-        <div className="text-xs text-gray-500">
-          Showing {filteredCount} of {blocks.length} blocks
         </div>
       )}
     </div>

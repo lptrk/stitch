@@ -42,8 +42,6 @@ export function useTestExecution() {
     (workflowName: string) => {
       const executionId = `exec-${Date.now()}`
 
-      console.log("🚀 Starting test execution:", workflowName)
-
       setExecution({
         id: executionId,
         status: "running",
@@ -67,7 +65,6 @@ export function useTestExecution() {
   )
 
   const updateExecution = useCallback((updates: Partial<TestExecution>) => {
-    console.log("📊 Updating test execution:", updates)
 
     setExecution((prev) => ({
       ...prev,
@@ -78,9 +75,8 @@ export function useTestExecution() {
 
   const completeExecution = useCallback(
     (success: boolean, error?: string) => {
-      console.log("🏁 Completing test execution:", success ? "SUCCESS" : "FAILED", error)
 
-      setExecution((prev: { logs: any }) => ({
+      setExecution((prev) => ({
         ...prev,
         status: success ? "success" : "failed",
         endTime: new Date(),
@@ -101,7 +97,6 @@ export function useTestExecution() {
   )
 
   const resetExecution = useCallback(() => {
-    console.log("🔄 Resetting test execution")
 
     setExecution({
       id: "",
@@ -114,9 +109,8 @@ export function useTestExecution() {
 
   const updateBlockStatus = useCallback(
     (blockId: string, itemId: string, status: "running" | "success" | "failed", error?: string, duration?: number) => {
-      console.log(`📊 Block ${blockId} status:`, status, error ? `(${error})` : "")
 
-      setExecution((prev: { currentBlockId: any; blockResults: any }) => ({
+      setExecution((prev) => ({
         ...prev,
         currentBlockId: status === "running" ? itemId : prev.currentBlockId,
         blockResults: {

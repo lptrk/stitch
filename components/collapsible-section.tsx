@@ -12,27 +12,31 @@ interface CollapsibleSectionProps {
   defaultExpanded?: boolean
   badge?: React.ReactNode
   icon?: React.ReactNode
+  action?: React.ReactNode
 }
 
-export function CollapsibleSection({ title, children, defaultExpanded = true, badge, icon }: CollapsibleSectionProps) {
+export function CollapsibleSection({ title, children, defaultExpanded = true, badge, icon, action }: CollapsibleSectionProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded)
 
   return (
-    <div className="space-y-3">
-      <Button
-        variant="ghost"
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full justify-between p-0 h-auto font-medium text-gray-700 hover:text-gray-900"
-      >
-        <div className="flex items-center gap-2">
-          {icon}
-          <span>{title}</span>
-          {badge}
-        </div>
-        {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-      </Button>
+    <div className="space-y-2">
+      <div className="flex items-center gap-1">
+        <Button
+          variant="ghost"
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="flex-1 justify-between p-0 h-auto font-medium text-foreground hover:text-foreground hover:bg-transparent"
+        >
+          <div className="flex items-center gap-1.5">
+            {icon}
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{title}</span>
+            {badge}
+          </div>
+          {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+        </Button>
+        {action && <div className="flex-shrink-0">{action}</div>}
+      </div>
 
-      {isExpanded && <div className="space-y-3 animate-in slide-in-from-top-2 duration-200">{children}</div>}
+      {isExpanded && <div className="space-y-2 animate-in slide-in-from-top-2 duration-150">{children}</div>}
     </div>
   )
 }

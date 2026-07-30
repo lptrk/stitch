@@ -1,16 +1,14 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle, XCircle, Clock, BarChart3 } from "lucide-react"
+import { CheckCircle, XCircle, Clock } from "lucide-react"
 import type { WorkflowItem } from "@/types/workflow"
 
 interface WorkflowStatusSummaryProps {
   items: WorkflowItem[]
-  isRunning?: boolean
 }
 
-export function WorkflowStatusSummary({ items, isRunning = false }: WorkflowStatusSummaryProps) {
+export function WorkflowStatusSummary({ items }: WorkflowStatusSummaryProps) {
   const statusCounts = items.reduce(
     (acc, item) => {
       const status = item.executionStatus || "pending"
@@ -20,107 +18,65 @@ export function WorkflowStatusSummary({ items, isRunning = false }: WorkflowStat
     {} as Record<string, number>,
   )
 
-  // Debug logging
-  console.log("📊 WorkflowStatusSummary - Items:", items.length)
-  console.log("📊 WorkflowStatusSummary - Status counts:", statusCounts)
-  console.log(
-    "📊 WorkflowStatusSummary - Items with status:",
-    items.map((item) => ({
-      id: item.id,
-      blockId: item.blockId,
-      status: item.executionStatus,
-      error: item.executionError,
-      duration: item.executionDuration,
-    })),
-  )
+  const total = items.length
+  const completed = (statusCounts.success || 0) + (statusCounts.failed || 0)
+  const successRate = total > 0 ? Math.round(((statusCounts.success || 0) / total) * 100) : 0
+  const totalDuration = items.reduce((sum, item) => sum + (item.executionDuration || 0), 0)
 
-  const totalItems = items.length
-  const completedItems = (statusCounts.success || 0) + (statusCounts.failed || 0)
-  const successRate = totalItems > 0 ? Math.round(((statusCounts.success || 0) / totalItems) * 100) : 0
+  if (total === 0) return null
 
-  if (totalItems === 0) {
-    return null
-  }
+  // Only show during/after a run – not on a fresh workflow with no execution yet
+  const hasAnyExecutionData = items.some((item) => item.executionStatus && item.executionStatus !== "pending")
+  if (!hasAnyExecutionData) return null
 
   return (
-    <Card className="w-full">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-sm">
-          <BarChart3 className="w-4 h-4" />
-          Workflow Status Summary ({totalItems} blocks)
-        </CardTitle>
-      </CardHeader>
-
-      <CardContent className="space-y-4">
-        {/* Progress Bar */}
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span>Progress</span>
-            <span>
-              {completedItems} / {totalItems} blocks
-            </span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div
-              className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${totalItems > 0 ? (completedItems / totalItems) * 100 : 0}%` }}
-            />
-          </div>
+    <div className="flex flex-wrap items-center gap-3 p-3 bg-muted border border-border rounded-lg">
+      {/* Progress bar */}
+      <div className="flex-1 min-w-[120px]">
+        <div className="flex justify-between text-xs text-muted-foreground mb-1">
+          <span>{completed}/{total} steps</span>
+          {completed > 0 && <span>{successRate}% passed</span>}
         </div>
-
-        {/* Status Badges */}
-        <div className="flex flex-wrap gap-2">
-          {statusCounts.success > 0 && (
-            <Badge className="bg-green-500 hover:bg-green-600 gap-1">
-              <CheckCircle className="w-3 h-3" />
-              {statusCounts.success} Passed
-            </Badge>
-          )}
-
-          {statusCounts.failed > 0 && (
-            <Badge className="bg-red-500 hover:bg-red-600 gap-1">
-              <XCircle className="w-3 h-3" />
-              {statusCounts.failed} Failed
-            </Badge>
-          )}
-
-          {statusCounts.running > 0 && (
-            <Badge className="bg-blue-500 hover:bg-blue-600 gap-1">
-              <Clock className="w-3 h-3 animate-spin" />
-              {statusCounts.running} Running
-            </Badge>
-          )}
-
-          {statusCounts.pending > 0 && (
-            <Badge variant="outline" className="gap-1">
-              <Clock className="w-3 h-3" />
-              {statusCounts.pending} Pending
-            </Badge>
-          )}
+        <div className="w-full bg-muted rounded-full h-1.5">
+          <div
+            className={`h-1.5 rounded-full transition-all duration-300 ${
+              statusCounts.failed > 0 ? "bg-red-500" : "bg-green-500"
+            }`}
+            style={{ width: `${total > 0 ? (completed / total) * 100 : 0}%` }}
+          />
         </div>
+      </div>
 
-        {/* Success Rate */}
-        {completedItems > 0 && (
-          <div className="flex items-center justify-between text-sm">
-            <span>Success Rate:</span>
-            <span
-              className={`font-medium ${successRate >= 80 ? "text-green-600" : successRate >= 50 ? "text-yellow-600" : "text-red-600"}`}
-            >
-              {successRate}%
-            </span>
-          </div>
+      {/* Status badges */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {(statusCounts.success || 0) > 0 && (
+          <Badge className="bg-green-500 hover:bg-green-600 gap-1 text-xs">
+            <CheckCircle className="w-3 h-3" />
+            {statusCounts.success} passed
+          </Badge>
         )}
-
-        {/* Execution Time Summary */}
-        {items.some((item) => item.executionDuration) && (
-          <div className="text-xs text-gray-500">
-            Total execution time: {items.reduce((sum, item) => sum + (item.executionDuration || 0), 0)}ms
-          </div>
+        {(statusCounts.failed || 0) > 0 && (
+          <Badge className="bg-red-500 hover:bg-red-600 gap-1 text-xs">
+            <XCircle className="w-3 h-3" />
+            {statusCounts.failed} failed
+          </Badge>
         )}
-
-        {/* Debug Info */}
-        <div className="text-xs text-gray-400 border-t pt-2">Debug: {JSON.stringify(statusCounts)}</div>
-      </CardContent>
-    </Card>
+        {(statusCounts.running || 0) > 0 && (
+          <Badge className="bg-primary text-primary-foreground hover:bg-primary/90 gap-1 text-xs">
+            <Clock className="w-3 h-3 animate-spin" />
+            running
+          </Badge>
+        )}
+        {(statusCounts.pending || 0) > 0 && completed === 0 && (
+          <Badge variant="outline" className="gap-1 text-xs">
+            <Clock className="w-3 h-3" />
+            {statusCounts.pending} pending
+          </Badge>
+        )}
+        {totalDuration > 0 && (
+          <span className="text-xs text-muted-foreground">{totalDuration}ms total</span>
+        )}
+      </div>
+    </div>
   )
 }

@@ -2,563 +2,298 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { Copy, Bug, Play, Code, Settings, AlertTriangle, CheckCircle, XCircle } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Play, Bug, CheckCircle, XCircle, Loader2, AlertTriangle, Copy, Download, Image } from "lucide-react"
 import type { TestBlockDefinition, WorkflowItem } from "@/types/workflow"
-import { useToast } from "@/hooks/use-toast"
 
 interface BlockDebugDialogProps {
   block: TestBlockDefinition | null
   workflowItem?: WorkflowItem | null
   open: boolean
   onClose: () => void
-  onTestBlock?: (block: TestBlockDefinition, parameters: Record<string, string>) => Promise<void>
+  onTestBlock?: (
+    block: TestBlockDefinition,
+    parameters: Record<string, string>,
+    onEvent?: (event: { type: string; data: any }) => void
+  ) => Promise<void>
 }
 
-interface DebugInfo {
-  blockId: string
-  blockName: string
-  isCustom: boolean
-  playwrightFunction: string
-  definedParameters: any[]
-  actualParameters: Record<string, string>
-  parameterValidation: {
-    valid: boolean
-    missing: string[]
-    extra: string[]
-    issues: string[]
-  }
-  codePreview?: string
-  executionContext: {
-    availableVariables: string[]
-    expectedInputs: string[]
-    potentialIssues: string[]
-  }
+type RunStatus = "idle" | "running" | "success" | "failed"
+
+interface LogEntry {
+  level: "info" | "error" | "warn" | "step"
+  text: string
+  duration?: number
 }
 
 export function BlockDebugDialog({ block, workflowItem, open, onClose, onTestBlock }: BlockDebugDialogProps) {
-  const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null)
-  const [isTestingBlock, setIsTestingBlock] = useState(false)
-  const { toast } = useToast()
+  const [params, setParams] = useState<Record<string, string>>({})
+  const [status, setStatus] = useState<RunStatus>("idle")
+  const [logs, setLogs] = useState<LogEntry[]>([])
+  const [duration, setDuration] = useState<number | null>(null)
+  const [screenshot, setScreenshot] = useState<string | null>(null)
 
   useEffect(() => {
-    if (block && open) {
-      generateDebugInfo()
+    if (open && block) {
+      const initial: Record<string, string> = {}
+      block.parameters?.forEach((p) => {
+        initial[p.id] = workflowItem?.parameters?.[p.id] ?? p.defaultValue ?? ""
+      })
+      setParams(initial)
+      setStatus("idle")
+      setLogs([])
+      setDuration(null)
+      setScreenshot(null)
     }
-  }, [block, workflowItem, open])
+  }, [open, block, workflowItem])
 
-  const generateDebugInfo = () => {
-    if (!block) return
+  if (!block) return null
 
-    const actualParams = workflowItem?.parameters || {}
-    const definedParams = block.parameters || []
+  const missingRequired = (block.parameters || []).filter((p) => p.required && !params[p.id]?.trim())
+  const canRun = missingRequired.length === 0 && !!onTestBlock
 
-    // Validate parameters
-    const requiredParams = definedParams.filter((p) => p.required).map((p) => p.id)
-    const providedParams = Object.keys(actualParams)
-    const missing = requiredParams.filter((id) => !actualParams[id] || actualParams[id].trim() === "")
-    const extra = providedParams.filter((id) => !definedParams.find((p) => p.id === id))
+  const addLog = (entry: LogEntry) => setLogs((l) => [...l, entry])
 
-    // Check for potential issues
-    const issues: string[] = []
+  const run = async () => {
+    if (!canRun) return
+    setStatus("running")
+    setLogs([{ level: "info", text: `Starting "${block.name}"` }])
+    setDuration(null)
+    setScreenshot(null)
+    const start = Date.now()
 
-    if (missing.length > 0) {
-      issues.push(`Missing required parameters: ${missing.join(", ")}`)
-    }
-
-    if (extra.length > 0) {
-      issues.push(`Extra parameters (not defined): ${extra.join(", ")}`)
-    }
-
-    // Check parameter values
-    definedParams.forEach((param) => {
-      const value = actualParams[param.id]
-      if (value !== undefined) {
-        if (param.type === "number" && isNaN(Number(value))) {
-          issues.push(`Parameter "${param.name}" should be a number but got: "${value}"`)
+    const handleEvent = ({ type, data }: { type: string; data: any }) => {
+      if (type === "step-start") {
+        addLog({ level: "step", text: `Running step: ${data.blockId}` })
+      } else if (type === "step-complete") {
+        const ms = data.duration ?? 0
+        if (data.status === "success") {
+          addLog({ level: "info", text: `Step passed`, duration: ms })
+          if (data.screenshot) setScreenshot(data.screenshot)
+        } else {
+          addLog({ level: "error", text: data.error || "Step failed", duration: ms })
         }
-        if (param.type === "selector" && !value.trim()) {
-          issues.push(`Parameter "${param.name}" is a selector but is empty`)
+      } else if (type === "complete") {
+        const ms = Date.now() - start
+        setDuration(ms)
+        if (data.success) {
+          setStatus("success")
+          addLog({ level: "info", text: `Done in ${ms}ms` })
+        } else {
+          setStatus("failed")
+          addLog({ level: "error", text: data.error || "Failed" })
         }
+      } else if (type === "error") {
+        addLog({ level: "error", text: data.message || "Unexpected error" })
       }
-    })
-
-    // Generate execution context info
-    const executionContext = {
-      availableVariables: ["page", "parameters", "expect", "console"],
-      expectedInputs: definedParams.map((p) => `parameters.${p.id}`),
-      potentialIssues: [
-        ...issues,
-        ...(block.isCustom && !block.customCode ? ["No custom code defined"] : []),
-        ...(block.isCustom && block.customCode?.includes("parameters.") && Object.keys(actualParams).length === 0
-          ? ["Code uses parameters but none provided"]
-          : []),
-      ],
     }
 
-    const info: DebugInfo = {
-      blockId: block.id,
-      blockName: block.name,
-      isCustom: !!block.isCustom,
-      playwrightFunction: block.playwrightFunction,
-      definedParameters: definedParams,
-      actualParameters: actualParams,
-      parameterValidation: {
-        valid: missing.length === 0 && issues.length === 0,
-        missing,
-        extra,
-        issues,
-      },
-      codePreview: block.customCode,
-      executionContext,
-    }
-
-    setDebugInfo(info)
-  }
-
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text)
-    toast({
-      title: "Copied to clipboard",
-      description: `${label} copied successfully`,
-    })
-  }
-
-  const generateTestCode = () => {
-    if (!debugInfo) return ""
-
-    const params = Object.entries(debugInfo.actualParameters)
-      .map(([key, value]) => `  ${key}: "${value}"`)
-      .join(",\n")
-
-    return `// Test code for ${debugInfo.blockName}
-const testParameters = {
-${params}
-}
-
-console.log('🐛 Testing block: ${debugInfo.blockName}')
-console.log('📋 Parameters:', testParameters)
-
-// Available in execution context:
-// - page (Playwright page object)
-// - parameters (your test parameters)
-// - expect (Playwright expect function)
-// - console (logging functions)
-
-${debugInfo.codePreview || "// No custom code defined"}
-`
-  }
-
-  const handleTestBlock = async () => {
-    if (!block || !debugInfo) return
-
-    setIsTestingBlock(true)
     try {
-      if (onTestBlock) {
-        await onTestBlock(block, debugInfo.actualParameters)
-        toast({
-          title: "Block test completed",
-          description: "Check the console for detailed output",
-        })
+      await onTestBlock!(block, params, handleEvent)
+      if (status !== "failed") {
+        const ms = Date.now() - start
+        setDuration(ms)
+        setStatus("success")
       }
     } catch (error) {
-      toast({
-        title: "Block test failed",
-        description: error instanceof Error ? error.message : "Unknown error",
-        variant: "destructive",
-      })
-    } finally {
-      setIsTestingBlock(false)
+      const ms = Date.now() - start
+      setDuration(ms)
+      setStatus("failed")
+      addLog({ level: "error", text: error instanceof Error ? error.message : String(error) })
     }
   }
 
-  if (!block || !debugInfo) return null
+  const setParam = (id: string, value: string) => setParams((prev) => ({ ...prev, [id]: value }))
+
+  const downloadScreenshot = () => {
+    if (!screenshot) return
+    const a = document.createElement("a")
+    a.href = screenshot
+    a.download = `debug-${block.name.replace(/\s+/g, "-")}-${Date.now()}.png`
+    a.click()
+  }
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader className="flex-shrink-0">
-          <DialogTitle className="flex items-center gap-2">
-            <Bug className="w-5 h-5 text-blue-600" />
-            Block Debugger: {debugInfo.blockName}
-            {debugInfo.isCustom && <Badge variant="secondary">Custom</Badge>}
-            <Badge variant={debugInfo.parameterValidation.valid ? "default" : "destructive"}>
-              {debugInfo.parameterValidation.valid ? "Valid" : "Issues Found"}
-            </Badge>
+      <DialogContent className="max-w-lg max-h-[88vh] flex flex-col gap-0 p-0">
+        {/* Header */}
+        <DialogHeader className="px-5 pt-5 pb-4 border-b flex-shrink-0">
+          <DialogTitle className="text-sm font-semibold flex items-center gap-2">
+            <Bug className="w-4 h-4 text-primary" />
+            Debug: {block.name}
+            {block.isCustom && <Badge variant="secondary" className="text-xs">Custom</Badge>}
+            {status === "success" && <Badge className="text-xs bg-green-500">Passed</Badge>}
+            {status === "failed" && <Badge variant="destructive" className="text-xs">Failed</Badge>}
           </DialogTitle>
         </DialogHeader>
 
-        <Tabs defaultValue="overview" className="flex-1 overflow-hidden">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="parameters">Parameters</TabsTrigger>
-            <TabsTrigger value="code">Code</TabsTrigger>
-            <TabsTrigger value="test">Test</TabsTrigger>
-          </TabsList>
+        <ScrollArea className="flex-1">
+          <div className="px-5 py-4 space-y-5">
 
-          <div className="flex-1 overflow-hidden mt-4">
-            <ScrollArea className="h-full">
-              {/* Overview Tab */}
-              <TabsContent value="overview" className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Block Info */}
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm flex items-center gap-2">
-                        <Settings className="w-4 h-4" />
-                        Block Information
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">ID:</span>
-                        <code className="bg-gray-100 px-1 rounded text-xs">{debugInfo.blockId}</code>
+            {/* Parameters */}
+            <div className="space-y-3">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Parameters</Label>
+              {(!block.parameters || block.parameters.length === 0) ? (
+                <p className="text-xs text-muted-foreground italic">No parameters – block runs immediately.</p>
+              ) : (
+                block.parameters.map((param) => (
+                  <div key={param.id} className="space-y-1">
+                    <label className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                      {param.name}
+                      {param.required && <span className="text-red-400 text-[10px]">required</span>}
+                      <span className="text-muted-foreground/70 font-normal text-[10px] ml-auto">{param.type}</span>
+                    </label>
+                    {param.type === "boolean" ? (
+                      <div className="flex items-center gap-2">
+                        <Switch checked={params[param.id] === "true"} onCheckedChange={(v) => setParam(param.id, String(v))} />
+                        <span className="text-xs text-muted-foreground">{params[param.id] === "true" ? "Yes" : "No"}</span>
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Type:</span>
-                        <Badge variant={debugInfo.isCustom ? "default" : "outline"}>
-                          {debugInfo.isCustom ? "Custom" : "Built-in"}
-                        </Badge>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Function:</span>
-                        <code className="bg-gray-100 px-1 rounded text-xs">{debugInfo.playwrightFunction}</code>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Parameters:</span>
-                        <span>{debugInfo.definedParameters.length} defined</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Validation Status */}
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm flex items-center gap-2">
-                        {debugInfo.parameterValidation.valid ? (
-                          <CheckCircle className="w-4 h-4 text-green-600" />
-                        ) : (
-                          <XCircle className="w-4 h-4 text-red-600" />
-                        )}
-                        Validation Status
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Status:</span>
-                        <Badge variant={debugInfo.parameterValidation.valid ? "default" : "destructive"}>
-                          {debugInfo.parameterValidation.valid ? "Valid" : "Has Issues"}
-                        </Badge>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Missing:</span>
-                        <span className="text-red-600">{debugInfo.parameterValidation.missing.length}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Extra:</span>
-                        <span className="text-yellow-600">{debugInfo.parameterValidation.extra.length}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Issues:</span>
-                        <span className="text-red-600">{debugInfo.parameterValidation.issues.length}</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Issues */}
-                {debugInfo.executionContext.potentialIssues.length > 0 && (
-                  <Card className="border-yellow-200 bg-yellow-50">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm flex items-center gap-2 text-yellow-800">
-                        <AlertTriangle className="w-4 h-4" />
-                        Potential Issues
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <ul className="space-y-1">
-                        {debugInfo.executionContext.potentialIssues.map((issue, index) => (
-                          <li key={index} className="text-sm text-yellow-800 flex items-start gap-2">
-                            <span className="text-yellow-600 mt-1">•</span>
-                            {issue}
-                          </li>
-                        ))}
-                      </ul>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Execution Context */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm">Execution Context</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div>
-                      <h4 className="text-xs font-medium text-gray-600 mb-1">Available Variables:</h4>
-                      <div className="flex flex-wrap gap-1">
-                        {debugInfo.executionContext.availableVariables.map((variable) => (
-                          <Badge key={variable} variant="outline" className="text-xs">
-                            {variable}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-medium text-gray-600 mb-1">Expected Parameter Access:</h4>
-                      <div className="flex flex-wrap gap-1">
-                        {debugInfo.executionContext.expectedInputs.map((input) => (
-                          <Badge key={input} variant="secondary" className="text-xs font-mono">
-                            {input}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              {/* Parameters Tab */}
-              <TabsContent value="parameters" className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Defined Parameters */}
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm">
-                        Defined Parameters ({debugInfo.definedParameters.length})
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {debugInfo.definedParameters.length === 0 ? (
-                        <p className="text-sm text-gray-500 italic">No parameters defined</p>
-                      ) : (
-                        <div className="space-y-3">
-                          {debugInfo.definedParameters.map((param, index) => (
-                            <div key={param.id} className="p-2 border rounded-lg">
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="font-medium text-sm">{param.name}</span>
-                                <div className="flex gap-1">
-                                  <Badge variant="outline" className="text-xs">
-                                    {param.type}
-                                  </Badge>
-                                  {param.required && (
-                                    <Badge variant="destructive" className="text-xs">
-                                      Required
-                                    </Badge>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="text-xs text-gray-600">
-                                <div>
-                                  ID: <code className="bg-gray-100 px-1 rounded">{param.id}</code>
-                                </div>
-                                {param.placeholder && <div>Placeholder: "{param.placeholder}"</div>}
-                              </div>
-                            </div>
+                    ) : param.type === "select" ? (
+                      <Select value={params[param.id] || ""} onValueChange={(v) => setParam(param.id, v)}>
+                        <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={param.placeholder} /></SelectTrigger>
+                        <SelectContent>
+                          {(param.options as { value: string; label: string }[] | undefined)?.map((o) => (
+                            <SelectItem key={o.value} value={o.value} className="text-xs">{o.label}</SelectItem>
                           ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                        </SelectContent>
+                      </Select>
+                    ) : param.type === "textarea" ? (
+                      <Textarea value={params[param.id] || ""} onChange={(e) => setParam(param.id, e.target.value)} placeholder={param.placeholder} className="text-xs font-mono min-h-[72px] resize-y" />
+                    ) : (
+                      <Input
+                        value={params[param.id] || ""}
+                        onChange={(e) => setParam(param.id, e.target.value)}
+                        placeholder={param.placeholder}
+                        type={param.type === "number" ? "number" : "text"}
+                        className={`h-8 text-xs ${param.type === "selector" ? "font-mono" : ""}`}
+                      />
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
 
-                  {/* Actual Parameters */}
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm flex items-center justify-between">
-                        Actual Parameters ({Object.keys(debugInfo.actualParameters).length})
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() =>
-                            copyToClipboard(JSON.stringify(debugInfo.actualParameters, null, 2), "Parameters")
-                          }
-                        >
-                          <Copy className="w-3 h-3" />
-                        </Button>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {Object.keys(debugInfo.actualParameters).length === 0 ? (
-                        <p className="text-sm text-gray-500 italic">No parameters set</p>
-                      ) : (
-                        <div className="space-y-2">
-                          {Object.entries(debugInfo.actualParameters).map(([key, value]) => {
-                            const isRequired = debugInfo.definedParameters.find((p) => p.id === key)?.required
-                            const isDefined = debugInfo.definedParameters.some((p) => p.id === key)
-                            const isEmpty = !value || value.trim() === ""
+            {/* Missing required warning */}
+            {missingRequired.length > 0 && (
+              <div className="flex items-start gap-2 p-2.5 bg-yellow-50 border border-yellow-200 rounded-md text-xs text-yellow-800">
+                <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                Required: <strong>{missingRequired.map(p => p.name).join(", ")}</strong>
+              </div>
+            )}
 
-                            return (
-                              <div key={key} className="p-2 border rounded-lg">
-                                <div className="flex items-center justify-between mb-1">
-                                  <code className="text-sm font-medium">{key}</code>
-                                  <div className="flex gap-1">
-                                    {!isDefined && (
-                                      <Badge variant="outline" className="text-xs text-yellow-600">
-                                        Extra
-                                      </Badge>
-                                    )}
-                                    {isRequired && isEmpty && (
-                                      <Badge variant="destructive" className="text-xs">
-                                        Missing
-                                      </Badge>
-                                    )}
-                                    {isRequired && !isEmpty && (
-                                      <Badge variant="default" className="text-xs">
-                                        OK
-                                      </Badge>
-                                    )}
-                                  </div>
-                                </div>
-                                <div className="text-xs bg-gray-50 p-1 rounded font-mono">
-                                  {value || <span className="text-gray-400 italic">empty</span>}
-                                </div>
-                              </div>
-                            )
-                          })}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
+            {/* Live output */}
+            {logs.length > 0 && (
+              <>
+                <Separator />
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    {status === "running" && <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />}
+                    {status === "success" && <CheckCircle className="w-3.5 h-3.5 text-green-500" />}
+                    {status === "failed" && <XCircle className="w-3.5 h-3.5 text-red-500" />}
+                    <span className={`text-xs font-medium ${status === "success" ? "text-green-700" : status === "failed" ? "text-red-700" : "text-primary"}`}>
+                      {status === "running" ? "Running…"
+                        : status === "success" ? `Passed${duration ? ` · ${duration}ms` : ""}`
+                        : `Failed${duration ? ` · ${duration}ms` : ""}`}
+                    </span>
+                    {status === "failed" && (
+                      <button
+                        onClick={() => navigator.clipboard.writeText(logs.map(l => l.text).join("\n"))}
+                        className="ml-auto text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1"
+                      >
+                        <Copy className="w-3 h-3" /> Copy
+                      </button>
+                    )}
+                  </div>
 
-                {/* Parameter Mapping */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm">Parameter Mapping Debug</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="bg-gray-900 text-gray-100 p-3 rounded-lg font-mono text-xs">
-                      <div className="text-green-400">// How parameters will be accessed in code:</div>
-                      {Object.entries(debugInfo.actualParameters).map(([key, value]) => (
-                        <div key={key}>
-                          <span className="text-blue-400">parameters.{key}</span>
-                          <span className="text-gray-400"> = </span>
-                          <span className="text-yellow-400">"{value}"</span>
-                        </div>
-                      ))}
-                      {Object.keys(debugInfo.actualParameters).length === 0 && (
-                        <div className="text-red-400">// No parameters available</div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              {/* Code Tab */}
-              <TabsContent value="code" className="space-y-4">
-                {debugInfo.isCustom ? (
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm flex items-center justify-between">
-                        <span className="flex items-center gap-2">
-                          <Code className="w-4 h-4" />
-                          Custom Block Code
+                  <div className="rounded-md bg-gray-950 p-3 space-y-1.5">
+                    {logs.map((log, i) => (
+                      <div key={i} className="flex items-start gap-2">
+                        <span className={`text-[10px] font-mono leading-relaxed flex-1 ${
+                          log.level === "error" ? "text-red-400"
+                          : log.level === "warn" ? "text-yellow-400"
+                          : log.level === "step" ? "text-primary/70"
+                          : "text-muted-foreground/70"
+                        }`}>
+                          {log.text}
                         </span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => copyToClipboard(debugInfo.codePreview || "", "Code")}
-                        >
-                          <Copy className="w-3 h-3" />
-                        </Button>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="bg-gray-900 text-gray-100 p-4 rounded-lg font-mono text-sm max-h-64 overflow-y-auto">
-                        <pre>{debugInfo.codePreview || "// No code defined"}</pre>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <Card>
-                    <CardContent className="text-center py-8">
-                      <Code className="w-12 h-12 mx-auto text-gray-400 mb-2" />
-                      <p className="text-gray-600">Built-in blocks don't have custom code</p>
-                      <p className="text-sm text-gray-500">
-                        Function: <code>{debugInfo.playwrightFunction}</code>
-                      </p>
-                    </CardContent>
-                  </Card>
-                )}
-              </TabsContent>
-
-              {/* Test Tab */}
-              <TabsContent value="test" className="space-y-4">
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm">Test Block Execution</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <p className="text-sm text-blue-800">
-                        <strong>Test Mode:</strong> This will execute the block with current parameters in a test
-                        environment. Check the browser console and network tab for detailed output.
-                      </p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-medium">Generated Test Code:</h4>
-                      <div className="bg-gray-900 text-gray-100 p-3 rounded-lg font-mono text-xs max-h-48 overflow-y-auto">
-                        <pre>{generateTestCode()}</pre>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => copyToClipboard(generateTestCode(), "Test Code")}
-                        className="w-full"
-                      >
-                        <Copy className="w-3 h-3 mr-1" />
-                        Copy Test Code
-                      </Button>
-                    </div>
-
-                    <Separator />
-
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={handleTestBlock}
-                        disabled={isTestingBlock || !debugInfo.parameterValidation.valid}
-                        className="flex-1"
-                      >
-                        {isTestingBlock ? (
-                          <>
-                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                            Testing...
-                          </>
-                        ) : (
-                          <>
-                            <Play className="w-4 h-4 mr-2" />
-                            Test Block
-                          </>
+                        {log.duration != null && (
+                          <span className="text-[10px] text-muted-foreground flex-shrink-0">{log.duration}ms</span>
                         )}
-                      </Button>
-                    </div>
-
-                    {!debugInfo.parameterValidation.valid && (
-                      <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                        <p className="text-sm text-red-800">
-                          <strong>Cannot test:</strong> Block has validation issues. Fix parameters first.
-                        </p>
+                      </div>
+                    ))}
+                    {status === "running" && (
+                      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                        <Loader2 className="w-2.5 h-2.5 animate-spin" /> waiting…
                       </div>
                     )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </ScrollArea>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Screenshot result */}
+            {screenshot && (
+              <>
+                <Separator />
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                      <Image className="w-3 h-3" /> Screenshot
+                    </Label>
+                    <button onClick={downloadScreenshot} className="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1">
+                      <Download className="w-3 h-3" /> Save
+                    </button>
+                  </div>
+                  <img
+                    src={screenshot}
+                    alt="Debug screenshot"
+                    className="w-full rounded-md border border-border cursor-pointer hover:opacity-90 transition-opacity"
+                    onClick={() => window.open(screenshot, "_blank")}
+                  />
+                </div>
+              </>
+            )}
+
+            {/* Custom code preview */}
+            {block.isCustom && block.customCode && (
+              <>
+                <Separator />
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Code</Label>
+                  <pre className="text-[10px] font-mono bg-gray-950 text-muted-foreground rounded-md p-3 max-h-28 overflow-y-auto leading-relaxed">
+                    <code>{block.customCode}</code>
+                  </pre>
+                </div>
+              </>
+            )}
           </div>
-        </Tabs>
+        </ScrollArea>
 
         {/* Footer */}
-        <div className="flex-shrink-0 border-t border-gray-200 p-4">
-          <div className="flex justify-between items-center">
-            <div className="text-xs text-gray-500">Debug session for: {debugInfo.blockName}</div>
-            <Button variant="outline" onClick={onClose}>
-              Close Debugger
+        <div className="px-5 py-3 border-t flex items-center justify-between flex-shrink-0">
+          <p className="text-[10px] text-muted-foreground">
+            Runs against the configured base URL
+          </p>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={onClose}>Close</Button>
+            <Button
+              size="sm"
+              className="h-7 text-xs gap-1.5"
+              onClick={run}
+              disabled={!canRun || status === "running"}
+            >
+              {status === "running"
+                ? <><Loader2 className="w-3 h-3 animate-spin" /> Running…</>
+                : <><Play className="w-3 h-3" /> Run</>
+              }
             </Button>
           </div>
         </div>

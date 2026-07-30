@@ -1,10 +1,8 @@
 "use client"
 
-import React from "react"
-
 import { useState, useCallback } from "react"
-import type { TestBlockDefinition } from "@/types/workflow"
-import type { LucideIcon } from "lucide-react"
+import type { TestBlockDefinition, TestBlockParameter } from "@/types/workflow"
+import { Code, type LucideIcon } from "lucide-react"
 
 interface CustomBlockData {
   name: string
@@ -13,13 +11,7 @@ interface CustomBlockData {
   icon: LucideIcon
   code: string
   tags: Array<{ name: string; color: string }>
-  parameters: Array<{
-    id: string
-    name: string
-    type: "text" | "number" | "selector"
-    required: boolean
-    placeholder: string
-  }>
+  parameters: TestBlockParameter[]
 }
 
 interface CustomBlockExport {
@@ -30,13 +22,7 @@ interface CustomBlockExport {
   iconName: string
   code: string
   tags: Array<{ name: string; color: string }>
-  parameters: Array<{
-    id: string
-    name: string
-    type: "text" | "number" | "selector"
-    required: boolean
-    placeholder: string
-  }>
+  parameters: TestBlockParameter[]
   createdAt: string
 }
 
@@ -50,7 +36,37 @@ const categoryColors = {
 }
 
 export function useCustomBlocks() {
-  const [customBlocks, setCustomBlocks] = useState<TestBlockDefinition[]>([])
+  const [customBlocks, setCustomBlocks] = useState<TestBlockDefinition[]>(() => {
+    if (typeof window === "undefined") return []
+    try {
+      const stored = window.localStorage.getItem("stitch-custom-blocks")
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        // Restore icon references (icons can't be serialized)
+        return parsed.map((block: any) => ({
+          ...block,
+          icon: block.icon || Code,
+        }))
+      }
+    } catch (e) {
+      console.warn("Failed to load custom blocks from localStorage:", e)
+    }
+    return []
+  })
+
+  // Persist to localStorage whenever customBlocks change
+  const persistBlocks = useCallback((blocks: TestBlockDefinition[]) => {
+    try {
+      const serializable = blocks.map((block) => ({
+        ...block,
+        icon: undefined, // Icons can't be serialized
+        iconName: block.icon?.displayName || block.icon?.name || "Code",
+      }))
+      window.localStorage.setItem("stitch-custom-blocks", JSON.stringify(serializable))
+    } catch (e) {
+      console.warn("Failed to persist custom blocks to localStorage:", e)
+    }
+  }, [])
 
   const addCustomBlock = useCallback((blockData: CustomBlockData) => {
     const blockId = `custom_${Date.now()}`
@@ -61,7 +77,7 @@ export function useCustomBlocks() {
       description: blockData.description,
       icon: blockData.icon,
       color: categoryColors[blockData.category as keyof typeof categoryColors] || "bg-gray-500",
-      playwrightFunction: blockId, // Use same ID for playwright function
+      playwrightFunction: blockId,
       parameters: blockData.parameters.map((param) => ({
         id: param.id,
         name: param.name,
@@ -75,21 +91,34 @@ export function useCustomBlocks() {
       tags: blockData.tags,
     }
 
-    setCustomBlocks((prev) => [...prev, newBlock])
+    setCustomBlocks((prev) => {
+      const updated = [...prev, newBlock]
+      persistBlocks(updated)
+      return updated
+    })
     return newBlock
-  }, [])
+  }, [persistBlocks])
 
   const updateCustomBlock = useCallback((updatedBlock: TestBlockDefinition) => {
-    setCustomBlocks((prev) => prev.map((block) => (block.id === updatedBlock.id ? updatedBlock : block)))
-  }, [])
+    setCustomBlocks((prev) => {
+      const updated = prev.map((block) => (block.id === updatedBlock.id ? updatedBlock : block))
+      persistBlocks(updated)
+      return updated
+    })
+  }, [persistBlocks])
 
   const removeCustomBlock = useCallback((blockId: string) => {
-    setCustomBlocks((prev) => prev.filter((block) => block.id !== blockId))
-  }, [])
+    setCustomBlocks((prev) => {
+      const updated = prev.filter((block) => block.id !== blockId)
+      persistBlocks(updated)
+      return updated
+    })
+  }, [persistBlocks])
 
   const clearCustomBlocks = useCallback(() => {
     setCustomBlocks([])
-  }, [])
+    persistBlocks([])
+  }, [persistBlocks])
 
   const exportCustomBlocks = useCallback(() => {
     const exportData: CustomBlockExport[] = customBlocks.map((block) => ({
@@ -140,14 +169,14 @@ export function useCustomBlocks() {
 
         // If icon not found, try some fallbacks
         if (!icon) {
-          console.warn(`Icon "${blockData.iconName}" not found, using fallback`)
+
           icon = iconMap["Code"] || iconMap["Zap"] || iconMap["Settings"]
         }
 
-        // Final fallback - use a simple function that returns a div
+        // Final fallback - use a generic icon
         if (!icon) {
-          console.error(`No fallback icon found, creating dummy icon`)
-          icon = (() => React.createElement("div", { className: "w-4 h-4 bg-gray-400 rounded" })) as LucideIcon
+          console.error(`No fallback icon found, using default icon`)
+          icon = Code
         }
 
         // Keep original ID structure but ensure uniqueness
@@ -175,13 +204,14 @@ export function useCustomBlocks() {
 
       // Replace all custom blocks with imported ones
       setCustomBlocks(importedBlocks)
+      persistBlocks(importedBlocks)
 
       return importedBlocks.length
     } catch (error) {
       console.error("Import error:", error)
       throw new Error(`Failed to import blocks: ${error instanceof Error ? error.message : "Unknown error"}`)
     }
-  }, [])
+  }, [persistBlocks])
 
   return {
     customBlocks,
