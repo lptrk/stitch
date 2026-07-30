@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 280px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 13px;
+      background: #0f172a;
+      color: #e2e8f0;
+    }
+    .header {
+      padding: 12px 14px 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid #1e293b;
+    }
+    .logo {
+      width: 22px; height: 22px;
+      border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+    .logo svg { width: 11px; height: 11px; }
+    .title { font-weight: 600; font-size: 13px; }
+    .body { padding: 10px 12px; }
+
+    .status {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 10px;
+      background: #1e293b; border-radius: 6px; margin-bottom: 8px;
+    }
+    .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .dot.connected { background: #4ade80; }
+    .dot.disconnected { background: #f87171; }
+    .dot.unknown { background: #94a3b8; }
+
+    .section-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #475569;
+      margin-bottom: 5px;
+      margin-top: 10px;
+    }
+    .url-row {
+      display: flex; gap: 5px;
+    }
+    input[type="url"], input[type="text"] {
+      flex: 1;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 5px;
+      color: #e2e8f0;
+      font-size: 11px;
+      padding: 5px 8px;
+      outline: none;
+    }
+    input[type="url"]:focus, input[type="text"]:focus {
+      border-color: #2563eb;
+    }
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 5px 10px;
+      font-size: 11px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    button:hover { background: #1d4ed8; }
+    button.secondary {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #94a3b8;
+    }
+    button.secondary:hover { background: #273548; color: #e2e8f0; }
+
+    .saved-hint {
+      font-size: 10px;
+      color: #4ade80;
+      margin-top: 4px;
+      display: none;
+    }
+
+    .pick-title { font-size: 11px; color: #94a3b8; margin-bottom: 8px; }
+    .tab-list { display: flex; flex-direction: column; gap: 4px; }
+    .tab-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 10px;
+      background: #1e293b; border-radius: 6px;
+      cursor: pointer; border: 1px solid transparent;
+      transition: border-color 0.1s;
+    }
+    .tab-item:hover { border-color: #2563eb; background: #1e3a5f; }
+    .tab-favicon { width: 14px; height: 14px; flex-shrink: 0; }
+    .tab-info { flex: 1; min-width: 0; }
+    .tab-title { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tab-url { font-size: 10px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .hint { margin-top: 8px; font-size: 11px; color: #475569; line-height: 1.5; }
+    .divider { border: none; border-top: 1px solid #1e293b; margin: 10px 0; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">
+      <img src="icon-32.png" width="22" height="22" style="border-radius:4px;display:block;" alt="Stitch" />
+    </div>
+    <span class="title">Stitch Picker</span>
+  </div>
+  <div class="body">
+    <div class="status">
+      <div class="dot unknown" id="dot"></div>
+      <span id="status-text">Checking…</span>
+    </div>
+    <p class="hint" id="hint"></p>
+
+    <div id="tab-picker-area"></div>
+
+    <hr class="divider">
+
+    <div class="section-label">Stitch URL</div>
+    <div class="url-row">
+      <input type="url" id="stitch-url-input" placeholder="https://stitch.your-company.intern" />
+      <button id="save-url-btn">Save</button>
+    </div>
+    <p class="saved-hint" id="saved-hint">✓ Saved</p>
+    <p class="hint" style="margin-top:6px;">Set the URL where Stitch is deployed. The extension will inject into that tab automatically.</p>
+  </div>
+  <script src="popup.js" defer></script>
+</body>
+</html>

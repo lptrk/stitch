@@ -1,0 +1,36 @@
+/* Stitch Picker – injected styles */
+
+#__stitch-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2147483647;
+  background: linear-gradient(135deg, #1e40af, #2563eb);
+  color: white;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 13px;
+  padding: 10px 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+  cursor: default;
+  user-select: none;
+}
+
+#__stitch-tooltip {
+  display: none;
+  position: absolute;
+  z-index: 2147483646;
+  background: #0f172a;
+  border: 1px solid #1e40af;
+  border-radius: 6px;
+  padding: 8px 10px;
+  max-width: 360px;
+  pointer-events: none;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  line-height: 1.5;
+}
+
+@keyframes stitch-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.3); }
+}
